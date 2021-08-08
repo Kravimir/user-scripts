@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Tablo Web App: Hide Notifications
 // @namespace    greasyfork.org
-// @version      1.1
+// @version      1.2
 // @description  This script auto-skips the update Tablo firmware screen and adds a button to close the Chrome update warning.
 // @match        *://my.tablotv.com/*
 // @grant    GM.xmlHttpRequest
@@ -22,6 +22,10 @@
 	window.addEventListener('load',function(){
 
 		//console.log('### initTabloAppFixes called. 2 TAF');
+
+		var hideChromeUpdateWarning=false,toggleWarningFlag=function(a){
+			hideChromeUpdateWarning=(typeof a=='undefined')?!hideChromeUpdateWarning:a;
+		};
 
 
 		// https://developer.mozilla.org/en-US/docs/Web/API/MutationObserver
@@ -54,19 +58,24 @@
 										clickSkipBtn(1);
 									},100);
 								} else if(nodes[i].querySelector('.win_invalid_version_header')!==null) {
-									targetEl=nodes[i];
-									nodes[i].style.position='relative';
-									var a=d.createElement('a');
-									a.className='btn btn-bare btn-close btn-menu-close';
-									a.style.cssText='position:absolute;right:8px;top:8px;color:#000;border:1px solid;';
-									a.setAttribute('aria-label',a.title='close');
-									a.innerHTML='X';
-									a.addEventListener('click',function(e){
-										e.preventDefault();
-										var el=d.querySelector('.win_invalid_version_header');
-										el.parentNode.removeChild(el);
-									});
-									nodes[i].appendChild(a);
+									targetEl=nodes[i].querySelector('.win_invalid_version_header');
+									if(!hideChromeUpdateWarning) {
+										targetEl.style.position='relative';
+										var a=d.createElement('a');
+										a.className='btn btn-bare btn-close btn-menu-close';
+										a.style.cssText='position:absolute;right:8px;top:8px;color:#000;border:1px solid;';
+										a.setAttribute('aria-label',a.title='close');
+										a.innerHTML='X';
+										a.addEventListener('click',function(e){
+											e.preventDefault();
+											toggleWarningFlag(true);
+											var el=d.querySelector('.win_invalid_version_header');
+											el.parentNode.removeChild(el);
+										});
+										targetEl.appendChild(a);
+									} else {
+										targetEl.parentNode.removeChild(targetEl);
+									}
 								}
 							}
 						}
@@ -89,5 +98,4 @@
 
 	});
 })();
-
 
