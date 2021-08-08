@@ -6,13 +6,13 @@ To use these, you need to first install a user-script manager extension for your
 
 ### Firefox and other Mozilla based browsers
 
-*[Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/)
-*[Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
-*[Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
+* [Greasemonkey](https://addons.mozilla.org/en-US/firefox/addon/greasemonkey/)
+* [Tampermonkey](https://addons.mozilla.org/en-US/firefox/addon/tampermonkey/)
+* [Violentmonkey](https://addons.mozilla.org/en-US/firefox/addon/violentmonkey/)
 
 
 ### Google Chrome and other Chromium based browsers
 
-*[Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en-US)
-*[Violentmonkey](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag?hl=en-US)
+* [Tampermonkey](https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo?hl=en-US)
+* [Violentmonkey](https://chrome.google.com/webstore/detail/violentmonkey/jinjaccalgkegednnccohejagnlnfdag?hl=en-US)
 
