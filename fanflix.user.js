@@ -1,13 +1,11 @@
 // ==UserScript==
 // @name         Fanflix.co Fixes
 // @namespace    userscripts.org
-// @version      0.5
+// @version      0.8
 // @description  Improvements to the horrible UI of the site. (Fixing the back button for the detail pages and replacing the silly carousels with plain old wrapping with vertical scrolling.)
 // @homepageURL  https://github.com/Kravimir/user-scripts
-// @downloadURL  https://github.com/Kravimir/user-scripts/blob/master/fanflix.user.js
-// @match        https://www.fanflix.co/*
 // @match        https://fanflix.co/*
-// @noframes
+// @match        https://www.fanflix.co/*
 // @icon         https://icons.duckduckgo.com/ip3/fanflix.co.ico
 // @run-at document-start
 // ==/UserScript==
@@ -71,9 +69,17 @@ var KChanges=function(){
 	var styleSheet=kStyleFns.makeStyleElm(),
 		styleSheetD=kStyleFns.makeStyleElm('','(min-width: 1008px)');
 
-	kStyleFns.addStyleRule(styleSheet,'.tier:has(.carousel), .tier.hasCarousel',
+
+	kStyleFns.addStyleRule(styleSheet,'.carousel .content>table',
+		'margin: 0 36px;');
+
+	kStyleFns.addStyleRule(styleSheet,'.tier:has(.carousel)',
 		'padding: 0 30px;box-sizing: border-box;max-width: 100%;');
-	kStyleFns.addStyleRule(styleSheet,'.carousel:has(.content>table)>.nav,.carousel.hasContentTable>.nav',
+	kStyleFns.addStyleRule(styleSheet,'.tier.hasCarousel',
+		'padding: 0 30px;box-sizing: border-box;max-width: 100%;');
+	kStyleFns.addStyleRule(styleSheet,'.carousel:has(.content>table)>.nav, .carousel:has(.content>table)>button.left, .carousel:has(.content>table)>button.right, .tier:has(.carousel) button.desktop.view-all, .tier:has(.carousel)>.header',
+		'display: none;');
+	kStyleFns.addStyleRule(styleSheet,'.carousel.hasContentTable>.nav, .carousel.hasContentTable>button.left, .carousel.hasContentTable>button.right, .tier.hasCarousel>.header, .tier.hasCarousel button.desktop.view-all',
 		'display: none;');
 	kStyleFns.addStyleRule(styleSheet,'.carousel .content>table',
 		'transform: none !important;');
@@ -85,33 +91,75 @@ var KChanges=function(){
 
 	kStyleFns.addStyleRule(styleSheetD,'#app header',
 		'padding: 30px 60px 10px;');
+	kStyleFns.addStyleRule(styleSheetD,'.carousel .content>table',
+		'margin: 0 70px;');
 
 
 
-	var lastInfoBtn;
+	var lastInfoBtn,ignoreHashChange=false,lastHash='';
+
+	var scrollPos={},lastScrollTop=0;
 
 	var clickFn1=function(e){
 		let el=e&&e.target?e.target:this,title;
-console.log(el);
 		if(el.nodeType!=1) el=el.parentNode;
 		if(el.nodeName.toLowerCase()!='button') return;
 		if(el.textContent.toLowerCase().indexOf('info')!==-1) {
 			lastInfoBtn=el;
 			title=encodeURIComponent(el.closest('td').querySelector('img[alt]').alt||'missing-title');
 			location.hash='#'+title;
-console.log(title);
+			if(lastScrollTop>(scrollPos[title]||0)) scrollPos[title]=lastScrollTop;
+console.log(title,scrollPos[title],d.querySelector('html').scrollTop);
 		}
 	};
 	var clickFn2=function(e){
 		let el=e&&e.target?e.target:this,title;
-console.log(el);
 		if(el.nodeType!=1) el=el.parentNode;
 console.log(el.textContent);
-		if(el.className.toLowerCase().indexOf('back')!==-1) {
-			location.hash='';
+		let cn=el.className.toLowerCase();
+		if(cn.indexOf('back')!==-1 || (cn.indexOf('view-all')!==-1 && el.parentNode.className.indexOf('header')===-1)) {
+			if(!ignoreHashChange) {
+				ignoreHashChange=true;
+				history.back();
+			}
+			setTimeout(function(){ignoreHashChange=false;},250);
 		}
 	};
 
+
+	// debouncing function from John Hann
+	// http://unscriptable.com/2009/03/20/debouncing-javascript-methods/
+	var debounce=function(func,threshold,execAsap){
+		var timeout;
+		return function debounced(){
+			var obj=this,args=arguments;
+			function delayed(){
+				if(!execAsap) func.apply(obj, args);
+				timeout=null;
+			};
+			if(timeout) clearTimeout(timeout);
+			else if(execAsap) func.apply(obj,args);
+			timeout=setTimeout(delayed,threshold||100);
+		};
+	};
+
+
+	var addClickHandlers=function(){
+		d.querySelectorAll('.carousel .content').forEach(function(el){
+			el.onclick=clickFn1;
+		});
+		d.querySelector('#app-bg+div').onclick=clickFn2;
+
+		// for browsers that don't support the :has() selector
+		d.querySelectorAll('.tier .carousel').forEach(function(el){
+			el.closest('.tier').classList.add('hasCarousel');
+		});
+		d.querySelectorAll('.carousel .content>table').forEach(function(el){
+			el.closest('.carousel').classList.add('hasContentTable');
+		});
+	};
+
+	addClickHandlers();
 
 	var MutationObserver = window.MutationObserver || window.WebkitMutationObserver;
 
@@ -120,20 +168,8 @@ console.log(el.textContent);
 		mutationsList.forEach(function(mutation){
 			try{
 				if(mutation.type == 'childList') {
+					addClickHandlers();
 
-					d.querySelectorAll('.carousel .content').forEach(function(el){
-						//el.addEventListener('click',clickFn1);
-						el.onclick=clickFn1;
-					});
-					d.querySelector('#app-bg+div').onclick=clickFn2;
-
-					// for browsers that don't support the :has() selector
-					d.querySelectorAll('.tier .carousel').forEach(function(el){
-						el.closest('.tier').classList.add('hasCarousel');
-					});
-					d.querySelectorAll('.carousel .content>table').forEach(function(el){
-						el.closest('.carousel').classList.add('hasContentTable');
-					});
 				}
 			} catch(ex) {
 				console.error(ex);
@@ -144,13 +180,35 @@ console.log(el.textContent);
 	observer.observe(d.querySelector('#app'),{attributes:false,childList:true,subtree:true});
 
 
+	window.addEventListener('scroll',debounce(function(e){
+		let t=d.querySelector('html').scrollTop;
+		if(t>99 && t < 200) {
+			let hash=lastHash;
+			// adjust scrollTop
+			if(hash && hash in scrollPos) d.querySelector('html').scrollTop=scrollPos[hash];
+		} else {
+			lastScrollTop=d.querySelector('html').scrollTop;
+		}
+	}));
+
 
 	window.addEventListener('hashchange',function(e){
-		console.log('HASHCHANGE',e.oldURL,e.newURL,lastInfoBtn)
+	/*
+		if(ignoreHashChange) {
+		console.log('ignoreHashChange', ignoreHashChange)
+			return;
+		}*/
+		console.log('HASHCHANGE',e.oldURL,e.newURL)
 		let i=e.newURL.indexOf('#');
 		if(i===-1 || i===(e.newURL.length-1)) {
 			let b=d.querySelector('button.back');
 			b?b.click():null;
+
+			i=e.oldURL.indexOf('#');
+			lastHash=e.oldURL.slice(i+1);
+//console.log(lastHash,scrollPos[lastHash],e.oldURL,e.newURL)
+			// adjust scrollTop
+			if(lastHash && lastHash in scrollPos) d.querySelector('html').scrollTop=scrollPos[lastHash];
 		} else if(lastInfoBtn) {
 			lastInfoBtn.click();
 		}
@@ -161,6 +219,6 @@ console.log(el.textContent);
 
 if(!KChanges.initHasRun) {
 	document.addEventListener('DOMContentLoaded',function(){
-		KChanges({type:'DOMReady'});
+		KChanges();
 	});
 }
